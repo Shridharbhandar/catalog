@@ -17,9 +17,9 @@ for(int i=0; i<=10; i++){
         mapfile < application.txt
         aws elasticbeanstalk describe-environments --application-name ${MAPFILE[n]}
         export APP_VERSION="${MAPFILE[n]}-${BUILD_NUMBER}"
-        aws s3 cp target/*.jar s3://sample-bucket-jenkins-testing/jenkins/tomcat/
         cd catalog
         mvn package
+        aws s3 cp target/*.jar s3://sample-bucket-jenkins-testing/jenkins/tomcat/
         aws elasticbeanstalk create-application-version --application-name ${MAPFILE[n]} --version-label "${APP_VERSION}" --source-bundle S3Bucket="sample-bucket-jenkins-testing",S3Key="/jenkins/tomcat/*.tar"
         done
         else 
