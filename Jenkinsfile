@@ -20,7 +20,7 @@ for(int i=0; i<=10; i++){
         cd catalog
         mvn package
         aws s3 cp target/*.jar s3://sample-bucket-jenkins-testing/jenkins/tomcat/
-        aws elasticbeanstalk create-application-version --application-name ${MAPFILE[n]} --version-label "${APP_VERSION}" --source-bundle S3Bucket="sample-bucket-jenkins-testing",S3Key="/jenkins/tomcat/*.tar"
+        aws elasticbeanstalk create-application-version --application-name ${MAPFILE[n]} --version-label "${APP_VERSION}" --source-bundle S3Bucket="sample-bucket-jenkins-testing",S3Key="/jenkins/tomcat/*.jar"
         done
         else 
         echo "No Environments in this region"
