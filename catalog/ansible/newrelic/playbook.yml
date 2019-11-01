@@ -1,0 +1,10 @@
+---
+- hosts: all
+  become: yes
+  roles:
+    - name: newrelic-infra
+  vars:
+    nrinfragent_config:
+      license_key: fa7d663d693b4a6fa3d1696cc76f0759ab61024f
+      log_file: /var/log/newrelic/nr-infra.log
+      log_to_stdout: false
