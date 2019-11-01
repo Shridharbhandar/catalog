@@ -1,0 +1,94 @@
+--- 
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Enable SSM Manager"
+Parameters:
+  TagValue:
+    Type: String
+    Description: The value through which the monitoring of an Instance or Target group is decided
+    Default: ''
+  TagType:
+    Type: String
+    Description: The type of tag. Ex: Environment, Application, Name, etc
+    Default: ''
+  TargetType:
+    Type: String
+    Description: The type through which the monitoring of an Instance or Target group is decided
+    AllowedValues: 
+    - INSTANCE 
+    - RESOURCE_GROUP
+    Default: INSTANCE    
+  Document:
+    Type: String
+    Description: The document policy based on which the SSM is enabled and process functionality
+    AllowedValues:
+    - AWS-InstallApplication
+    - AWS-ApplyAnsiblePlaybooks
+    - AWS-RunPatchBaseline
+    - AWS-AttachEBSVolume
+    Default: 'AWS-RunPatchBaseline'
+Resources: 
+  MaintainWindow: 
+    Properties: 
+      AllowUnassociatedTargets: 'true'
+      Cutoff: 1
+      Description: "The Window used for Maintenance"
+      Duration: 2
+      Name: "UpdateMaintainanceTest-MW"
+      Schedule: "cron(0 1 ? * SAT *)"
+    Type: "AWS::SSM::MaintenanceWindow"
+  SSMProfile: 
+    Properties: 
+      InstanceProfileName: SSMProfile
+      Path: '/'
+      Roles: 
+        - !Ref SSMRole
+    Type: "AWS::IAM::InstanceProfile"
+  SSMRole: 
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Statement: 
+          - 
+            Action: 
+              - "sts:AssumeRole"
+            Effect: Allow
+            Principal: 
+              Service: 
+                - 'ssm.amazonaws.com'
+        Version: "2012-10-17"
+      Path: "/"
+      Policies:
+      - 
+        PolicyName: "SSM"
+        PolicyDocument: 
+          Version: '2012-10-17'
+          Statement:
+            - {Effect: Allow, Action: 'ssm:*', Resource: '*'}
+    Type: "AWS::IAM::Role"
+  Targets: 
+    Properties: 
+      Description: "The targets to be monitored"
+      Name: Services-SSM
+      ResourceType: !Ref TargetType
+      Targets: 
+        - 
+          Key: !Ref TagType
+          Values: 
+            - !Ref TagValue
+      WindowId: !Ref MaintainWindow
+    Type: "AWS::SSM::MaintenanceWindowTarget"
+  Tasks: 
+    Properties: 
+      Description: "These are the tasks"
+      MaxConcurrency: 6
+      MaxErrors: 6
+      Name: SSM-Task
+      Priority: 1
+      Targets: 
+        - 
+          Key: 'WindowTargetIds'
+          Values: 
+            - !Ref Targets
+      TaskArn: !Ref Document
+      TaskType: RUN_COMMAND
+      WindowId: !Ref MaintainWindow
+    Type: "AWS::SSM::MaintenanceWindowTask"

@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: VPC Peer for Crossaccount
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Source VPC Details
+      Parameters:
+        - SourceVPCID
+        - Environment
+    - Label:
+        default: Destination VPC Details
+      Parameters:
+        - DestinationVPCRegion
+        - DestinationVPCID
+        - DestinationaccountID
+        - Peerrole    
+Parameters:
+  SourceVPCID:
+    Type: AWS::EC2::VPC::Id
+  DestinationVPCID:
+    Type: String
+    Default: '' 
+  DestinationVPCRegion:
+    Type: String
+    Default: '' 
+  DestinationaccountID:
+    Type: Number
+    Default: ''
+  Environment:
+    Type: String
+    Default: Dev
+    AllowedValues:
+    - Dev
+    - Prod
+    - Staging 
+  Peerrole:
+    Type: String
+    Default: VPCPeerRole
+         
+Resources:
+  VPCPeeringConnection:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      PeerVpcId: !Ref DestinationVPCID
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-${Environment}-VpcPeeringConnection"
+      - Key: Environment
+        Value: !Ref Environment
+      VpcId: !Ref SourceVPCID
+      PeerOwnerId: !Ref DestinationaccountID
+      PeerRegion: !Ref DestinationVPCRegion
+      PeerRoleArn: !Sub arn:aws:iam::${DestinationaccountID}:role/${Peerrole}

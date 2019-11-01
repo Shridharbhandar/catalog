@@ -1,0 +1,6 @@
+- hosts: all
+  become: yes
+  vars:
+    Datadog_key:
+  roles:
+    - { role: ansible-datadog , become: yes, datadog_api_key: "{{Datadog_key}}" }

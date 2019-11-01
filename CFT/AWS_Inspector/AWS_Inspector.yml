@@ -1,0 +1,294 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Security: Setup AWS Inspector Pipeline based on existing tag conventions'
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: EC2 Tags used by Inspector
+      Parameters:
+      - EC2Tag1Key
+      - EC2Tag1Value
+#      - EC2Tag2Key
+#      - EC2Tag2Value
+Parameters:
+  AssessmentTemplateName:
+    Description: What to name the AWS Inspector Assessment Template
+    Type: String
+    Default: inspector-assessment-template
+  AssessmentTargetName:
+    Description: What to name the AWS Inspector Assessment Target
+    Type: String
+    Default: inspector-assessment-target
+  EC2Tag1Key:
+    Description: Tag 1 name
+    Type: String
+    Default: Environment
+  EC2Tag1Value:
+    Description: Tag 1 value
+    Type: String
+    Default: Development
+#  EC2Tag2Key:
+#    Description: Tag 2 name
+#    Type: String
+#    Default: Environment
+#  EC2Tag2Value:
+#    Description: Tag 2 value
+#    Type: String
+#    Default: dev
+  TopicName:
+    Description: Name of the SNS topic.
+    Type: String
+    Default: Inspector
+  SubscriptionEmail:
+    Description: Email address for the Inspector finding subscription.
+    Type: String
+  SubscriptionProtocol:
+    Type: String
+    Description: The subscription's protocol
+    AllowedValues:
+    - http
+    - https
+    - email
+    - email-json
+    - sms
+    - sqs
+    - application
+    - lambda
+    Default: email
+Mappings:
+  SNSMap:
+    us-east-1:
+      inspectorAccount: 'arn:aws:iam::316112463485:root'
+    us-west-2:
+      inspectorAccount: 'arn:aws:iam::758058086616:root'
+    us-west-1:
+      inspectorAccount: 'arn:aws:iam::166987590008:root'
+    eu-west-1:
+      inspectorAccount: 'arn:aws:iam::357557129151:root'
+    eu-central-1:
+      inspectorAccount: 'arn:aws:iam::537503971621:root'
+    ap-northeast-1:
+      inspectorAccount: 'arn:aws:iam::406045910587:root'
+    ap-northeast-2:
+      inspectorAccount: 'arn:aws:iam::526946625049:root'
+    ap-southeast-2:
+      inspectorAccount: 'arn:aws:iam::454640832652:root'
+    ap-south-1:
+      inspectorAccount: 'arn:aws:iam::162588757376:root'
+  RegionMap:
+    us-east-1:
+      inspectorAccount: '316112463485'
+    us-west-2:
+      inspectorAccount: '758058086616'
+    us-west-1:
+      inspectorAccount: '166987590008'
+    eu-west-1:
+      inspectorAccount: '357557129151'
+    eu-central-1:
+      inspectorAccount: '537503971621'
+    ap-northeast-1:
+      inspectorAccount: '406045910587'
+    ap-northeast-2:
+      inspectorAccount: '526946625049'
+    ap-southeast-2:
+      inspectorAccount: '454640832652'
+    ap-south-1:
+      inspectorAccount: '162588757376'
+  RulesPackageIds:
+    us-east-1:
+      '1': 0-R01qwB5Q
+      '2': 0-PmNV0Tcd
+      '3': 0-gEjTy7T7
+      '4': 0-rExsr2X8
+    us-east-2:
+      '1': 0-JnA8Zp85
+      '2': 0-m8r61nnh
+      '3': 0-cE4kTR30
+      '4': 0-AxKmMHPX        
+    us-west-1:
+      '1': 0-TKgzoVOa
+      '2': 0-xUY8iRqX
+      '3': 0-TxmXimXF
+      '4': 0-byoQRFYm
+    us-west-2:
+      '1': 0-9hgA516p
+      '2': 0-H5hpSawc
+      '3': 0-rD1z6dpl
+      '4': 0-JJOtZiqQ
+    eu-west-1:
+      '1': 0-ubA5XvBh
+      '2': 0-sJBhCr0F
+      '3': 0-SPzU33xe
+      '4': 0-SnojL3Z6
+    eu-central-1:
+      '1': 0-wNqHa8M9
+      '2': 0-nZrAVuv8
+      '3': 0-6yunpJ91
+      '4': 0-ZujVHEPB
+    ap-northeast-1:
+      '1': 0-gHP9oWNT
+      '2': 0-7WNjqgGu
+      '3': 0-YI95DVd7
+      '4': 0-bBUQnxMq
+    ap-northeast-2:
+      '1': 0-PoGHMznc
+      '2': 0-T9srhg1z
+      '3': 0-s3OmLzhL
+      '4': 0-2WRpmi4n
+    ap-southeast-2:
+      '1': 0-D5TGAxiR
+      '2': 0-Vkd2Vxjq
+      '3': 0-FLcuV4Gz
+      '4': 0-asL6HRgN
+    ap-south-1:
+      '1': 0-LqnJE9dO
+      '2': 0-PSUlX14m
+      '3': 0-YxKfjFu1
+      '4': 0-fs0IZZBj
+Resources:
+  myassessmenttarget: 
+    Type: AWS::Inspector::AssessmentTarget
+    Properties: 
+      AssessmentTargetName : !Ref AssessmentTargetName
+      ResourceGroupArn : !Ref myresourcegroup
+  myresourcegroup: 
+    Type: AWS::Inspector::ResourceGroup
+    Properties: 
+      ResourceGroupTags:
+       - 
+         Key: !Ref EC2Tag1Key
+         Value: !Ref EC2Tag1Value
+  myassessmenttemplate: 
+    Properties: 
+      AssessmentTargetArn: !Ref myassessmenttarget
+      AssessmentTemplateName: !Ref AssessmentTemplateName
+      DurationInSeconds: 180
+      RulesPackageArns: 
+         - !Join
+           - ''
+           - - 'arn:aws:inspector:'
+             - Ref: AWS::Region
+             - ":"
+             - Fn::FindInMap:
+               - RegionMap
+               - Ref: AWS::Region
+               - inspectorAccount
+             - ":rulespackage/"
+             - Fn::FindInMap:
+               - RulesPackageIds
+               - Ref: AWS::Region
+               - '1'
+         - !Join
+           - ''
+           - - 'arn:aws:inspector:'
+             - Ref: AWS::Region
+             - ":"
+             - Fn::FindInMap:
+               - RegionMap
+               - Ref: AWS::Region
+               - inspectorAccount
+             - ":rulespackage/"
+             - Fn::FindInMap:
+               - RulesPackageIds
+               - Ref: AWS::Region
+               - '2'
+         - !Join
+           - ''
+           - - 'arn:aws:inspector:'
+             - Ref: AWS::Region
+             - ":"
+             - Fn::FindInMap:
+               - RegionMap
+               - Ref: AWS::Region
+               - inspectorAccount
+             - ":rulespackage/"
+             - Fn::FindInMap:
+               - RulesPackageIds
+               - Ref: AWS::Region
+               - '3'
+         - !Join
+           - ''
+           - - 'arn:aws:inspector:'
+             - Ref: AWS::Region
+             - ":"
+             - Fn::FindInMap:
+               - RegionMap
+               - Ref: AWS::Region
+               - inspectorAccount
+             - ":rulespackage/"
+             - Fn::FindInMap:
+               - RulesPackageIds
+               - Ref: AWS::Region
+               - '4'
+    Type: AWS::Inspector::AssessmentTemplate
+  SnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName:
+        Ref: TopicName
+      DisplayName:
+        Ref: TopicName
+  SnsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint:
+        Ref: SubscriptionEmail
+      Protocol: 
+        Ref: SubscriptionProtocol
+      TopicArn:
+        Ref: SnsTopic
+  SNSPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+      - Ref: SnsTopic
+      PolicyDocument:
+        Version: '2008-10-17'
+        Id: __default_policy_ID
+        Statement:
+        - Sid: __default_statement_ID
+          Effect: Allow
+          Principal:
+            AWS: "*"
+          Action:
+          - SNS:Publish
+          - SNS:GetTopicAttributes
+          - SNS:RemovePermission
+          - SNS:SetTopicAttributes
+          - SNS:DeleteTopic
+          - SNS:ListSubscriptionsByTopic
+          - SNS:GetTopicAttributes
+          - SNS:Receive
+          - SNS:AddPermission
+          - SNS:Subscribe
+          Resource:
+            Ref: SnsTopic
+          Condition:
+            StringEquals:
+              AWS:SourceOwner:
+                Ref: AWS::AccountId
+        - Sid: __console_pub_0
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::FindInMap:
+              - SNSMap
+              - Ref: AWS::Region
+              - 'inspectorAccount'
+          Action: SNS:Publish
+          Resource:
+            Ref: SnsTopic
+        - Sid: __console_sub_0
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::FindInMap:
+              - SNSMap
+              - Ref: AWS::Region
+              - 'inspectorAccount'
+          Action:
+          - SNS:Subscribe
+          - SNS:Receive
+          Resource:
+            Ref: SnsTopic
