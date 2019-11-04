@@ -30,7 +30,7 @@ for(int i=0; i<=10; i++){
             aws elasticbeanstalk update-environment --environment-name "${envi}" --version-label "${APP_VERSION}"
         done
         else
-        echo "No Environments in this region"
+        echo "No Appliucations in this region"
         fi
 
 
